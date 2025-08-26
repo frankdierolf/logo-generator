@@ -1,29 +1,16 @@
-name: Publish to JSR
-
+name: Publish
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  id-token: write
+    branches:
+      - main
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Verify the package
-        run: deno publish --dry-run
-
+      - uses: actions/checkout@v4
       - name: Publish package
-        run: deno publish
+        run: npx jsr publish
