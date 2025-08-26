@@ -1,6 +1,7 @@
 {
   "name": "@logocli/logo-generator",
   "version": "1.1.0",
+  "description": "Ultra-simple professional logo generation CLI designed for Claude Code integration. Generate logos with AI in minutes through batch processing and iteration workflows.",
   "license": "MIT",
   "exports": "./main.ts",
   "imports": {
@@ -24,5 +25,11 @@
     "strict": true,
     "noImplicitAny": true,
     "noImplicitReturns": true
+  },
+  "publish": {
+    "exclude": [
+      ".git/**",
+      "bin/**"
+    ]
   }
 }
