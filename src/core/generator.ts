@@ -51,11 +51,12 @@ export class LogoGenerator {
 
       const imageData = response.data[0];
       
-      if (!imageData.url) {
-        throw new Error("No URL returned from OpenAI API. Please try again.");
+      if (!imageData.b64_json) {
+        throw new Error("No image data returned from OpenAI API. Please try again.");
       }
       
-      const imageUrl = imageData.url;
+      // Convert base64 to data URL for consistency with existing code
+      const imageUrl = `data:image/png;base64,${imageData.b64_json}`;
 
       return {
         url: imageUrl,
@@ -167,8 +168,6 @@ export class LogoGenerator {
       size: options.size || "1024x1024",
       quality,
       background: "transparent", // Native transparency support in GPT-image-1
-      response_format: "url", // Force URL response instead of base64
-      stream: false, // Ensure we get a response object, not a stream
     };
   }
 
