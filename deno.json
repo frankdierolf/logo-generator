@@ -29,7 +29,8 @@
   "publish": {
     "exclude": [
       ".git/**",
-      "bin/**"
+      "bin/**",
+      ".github/assets/**"
     ]
   }
 }
