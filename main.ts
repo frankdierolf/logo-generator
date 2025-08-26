@@ -39,7 +39,7 @@ async function main() {
   try {
     await new Command()
       .name("logo-cli")
-      .version("1.1.3")
+      .version("1.2.0")
       .description("Professional logo generator for Claude Code")
       .command("start", startCommand)
       .command("generate", generateCommand)
