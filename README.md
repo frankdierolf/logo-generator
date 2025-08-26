@@ -1,5 +1,5 @@
 <div align="center">
-  <img src=".github/assets/logo-cli-logo.png" alt="Logo CLI Logo" width="200" height="200">
+  <img src="https://raw.githubusercontent.com/frankdierolf/logo-generator/main/.github/assets/logo-cli-logo.png" alt="Logo CLI Logo" width="200" height="200">
   
   # Logo CLI for Claude Code
   
@@ -26,7 +26,7 @@ export OPENAI_API_KEY="sk-your-key-here"
 
 See Logo CLI in action - from company questions to final logos in under a minute:
 
-https://github.com/user-attachments/assets/demo-workflow.mp4
+https://raw.githubusercontent.com/frankdierolf/logo-generator/main/.github/assets/demo-workflow.mp4
 
 > This 1-minute demo shows the complete workflow: Claude asking about your company, generating diverse logo options, and organizing results in iteration folders.
 
