@@ -39,7 +39,7 @@ export class LogoGenerator {
       : this.promptEngine.optimize(request, options);
 
     const result = await this.retryStrategy.execute(async () => {
-      const model = "gpt-image-1";
+      const model = "dall-e-3";
       const apiParams = this.buildAPIParams(model, optimizedPrompt, options);
 
       const response = await this.client.images.generate(apiParams);
@@ -137,38 +137,32 @@ export class LogoGenerator {
   private calculateCost(
     quality: "standard" | "hd",
   ): number {
-    // GPT-image-1 pricing by quality tier
+    // DALL-E 3 pricing by quality tier
     const qualityMap = {
-      "standard": 0.07, // Medium quality
-      "hd": 0.19, // High quality
+      "standard": 0.04, // Standard quality
+      "hd": 0.08, // HD quality
     };
-    return qualityMap[quality] || 0.07;
+    return qualityMap[quality] || 0.04;
   }
 
   /**
-   * Build API parameters for GPT-image-1
+   * Build API parameters for DALL-E 3
    */
   private buildAPIParams(
     _model: AIModel,
     prompt: string,
     options: GenerationOptions,
   ): OpenAI.Images.ImageGenerateParams {
-    // Map quality values for GPT-image-1
-    const qualityMap: Record<string, "medium" | "high"> = {
-      "standard": "medium",
-      "hd": "high",
-    };
-    const quality = qualityMap[options.quality || "standard"] || "medium";
+    // Map quality values for DALL-E 3
+    const quality = options.quality === "hd" ? "hd" : "standard";
 
     return {
-      model: "gpt-image-1",
+      model: "dall-e-3",
       prompt,
       n: 1,
       size: options.size || "1024x1024",
       quality,
-      background: "transparent", // Native transparency support in GPT-image-1
       response_format: "url", // Force URL response instead of base64
-      stream: false, // Ensure we get a response object, not a stream
     };
   }
 

@@ -235,5 +235,5 @@ export type TemplateComplexity =
 
 export type QualityTier =
   | "preview" // Low quality - $0.02
-  | "web" // Medium quality - $0.07
-  | "print"; // High quality - $0.19
+  | "web" // Standard quality - $0.04
+  | "print"; // HD quality - $0.08
