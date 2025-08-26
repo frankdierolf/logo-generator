@@ -136,8 +136,8 @@ export const generateCommand = new Command()
         ? options.industry
         : undefined;
 
-      // DALL-E 3 cost calculation
-      const costPerImage = quality === "hd" ? 0.08 : 0.04;
+      // GPT-image-1 cost calculation
+      const costPerImage = quality === "hd" ? 0.16 : 0.04;
 
       if (!options.quiet) {
         console.log(colors.gray(`Model: ${model}`));

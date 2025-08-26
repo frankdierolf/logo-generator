@@ -30,7 +30,7 @@ Claude will:
 5. Create refined variations in `iteration-2/`, `iteration-3/`
 6. Continue until you have the perfect logo
 
-**Cost**: $0.80-$3.20 (20-40 logos across 3-4 iterations)  
+**Cost**: $0.80-$6.40 (20-40 logos across 3-4 iterations)  
 **Time**: 10-15 minutes  
 **Result**: 3-5 perfect logo options organized in folders
 
@@ -71,7 +71,7 @@ All logos are organized in `./logos/iteration-N/` folders with automatic progres
 
 - [Deno 2.0+](https://deno.com/) 
 - OpenAI API key with image generation access
-- $0.04 per standard logo, $0.08 per HD logo
+- $0.04 per standard logo, $0.16 per HD logo
 
 ---
 

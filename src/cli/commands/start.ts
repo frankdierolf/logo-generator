@@ -39,8 +39,8 @@ I'll create JSON files like this:
   }
 ]
 
-COST: $0.04 per standard logo, $0.08 per HD logo
-TYPICAL SESSION: 20-40 logos across 3-4 iterations = $0.80-$3.20
+COST: $0.04 per standard logo, $0.16 per HD logo
+TYPICAL SESSION: 20-40 logos across 3-4 iterations = $0.80-$6.40
 
 Let's start! Please tell me:
 - What's your company name?
