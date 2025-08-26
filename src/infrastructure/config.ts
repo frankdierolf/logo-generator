@@ -74,9 +74,6 @@ export class ConfigManager {
       defaultQuality: "standard",
       defaultSize: "1024x1024",
       outputDir: "./logos",
-      cacheEnabled: true,
-      cacheTtl: 3600, // 1 hour
-      maxCacheSize: "500MB",
     };
   }
 
@@ -95,11 +92,6 @@ export class ConfigManager {
     if (envOutputDir) {
       this.config.outputDir = envOutputDir;
     }
-
-    const envCacheEnabled = Deno.env.get("LOGO_CACHE_ENABLED");
-    if (envCacheEnabled) {
-      this.config.cacheEnabled = envCacheEnabled.toLowerCase() === "true";
-    }
   }
 
   async setApiKey(apiKey: string): Promise<void> {
@@ -112,11 +104,6 @@ export class ConfigManager {
     console.log(`✅ Output directory set to: ${outputDir}`);
   }
 
-  async toggleCache(): Promise<void> {
-    const enabled = !this.config.cacheEnabled;
-    await this.save({ cacheEnabled: enabled });
-    console.log(`✅ Cache ${enabled ? "enabled" : "disabled"}`);
-  }
 
   printConfig(): void {
     console.log("📋 Current Configuration:");
@@ -125,8 +112,5 @@ export class ConfigManager {
     console.log(`  Default Quality: ${this.config.defaultQuality}`);
     console.log(`  Default Size: ${this.config.defaultSize}`);
     console.log(`  Output Directory: ${this.config.outputDir}`);
-    console.log(`  Cache Enabled: ${this.config.cacheEnabled ? "✅" : "❌"}`);
-    console.log(`  Cache TTL: ${this.config.cacheTtl}s`);
-    console.log(`  Max Cache Size: ${this.config.maxCacheSize}`);
   }
 }

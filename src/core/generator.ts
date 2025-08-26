@@ -11,16 +11,14 @@ import { PromptEngine } from "./prompts.ts";
 import { ProfessionalPromptEngine } from "./professional-prompts.ts";
 import { RetryStrategy } from "../utils/retry.ts";
 import { generateId } from "../utils/id.ts";
-import { CacheManager } from "../infrastructure/cache.ts";
 
 export class LogoGenerator {
   private client: OpenAI;
   private promptEngine: PromptEngine;
   private professionalPromptEngine: ProfessionalPromptEngine;
   private retryStrategy: RetryStrategy;
-  private cache?: CacheManager;
 
-  constructor(apiKey: string, useCache: boolean = true) {
+  constructor(apiKey: string) {
     if (!apiKey) {
       throw new Error("OpenAI API key is required");
     }
@@ -29,10 +27,6 @@ export class LogoGenerator {
     this.promptEngine = new PromptEngine();
     this.professionalPromptEngine = new ProfessionalPromptEngine();
     this.retryStrategy = new RetryStrategy();
-
-    if (useCache) {
-      this.cache = new CacheManager();
-    }
   }
 
   async generate(
@@ -43,22 +37,6 @@ export class LogoGenerator {
     const optimizedPrompt = options.template
       ? this.professionalPromptEngine.optimizePrompt(request, options)
       : this.promptEngine.optimize(request, options);
-
-    // Check cache first
-    if (this.cache && options.useCache !== false) {
-      const promptHash = this.cache.createPromptHash(
-        request.company,
-        optimizedPrompt,
-        options.style?.toString(),
-        options.colors,
-      );
-
-      const cached = await this.cache.get(promptHash);
-      if (cached) {
-        console.log("🗄️ Cache hit - using cached result");
-        return cached;
-      }
-    }
 
     const result = await this.retryStrategy.execute(async () => {
       const model = "gpt-image-1";
@@ -72,9 +50,12 @@ export class LogoGenerator {
       }
 
       const imageData = response.data[0];
-      // GPT-image-1 returns b64_json by default, not URL
-      const imageUrl = imageData.url ||
-        `data:image/png;base64,${imageData.b64_json}`;
+      
+      if (!imageData.url) {
+        throw new Error("No URL returned from OpenAI API. Please try again.");
+      }
+      
+      const imageUrl = imageData.url;
 
       return {
         url: imageUrl,
@@ -87,17 +68,6 @@ export class LogoGenerator {
         ),
       };
     });
-
-    // Cache the result
-    if (this.cache && options.useCache !== false) {
-      const promptHash = this.cache.createPromptHash(
-        request.company,
-        optimizedPrompt,
-        options.style?.toString(),
-        options.colors,
-      );
-      await this.cache.set(promptHash, result);
-    }
 
     return result;
   }
@@ -197,6 +167,7 @@ export class LogoGenerator {
       size: options.size || "1024x1024",
       quality,
       background: "transparent", // Native transparency support in GPT-image-1
+      response_format: "url", // Force URL response instead of base64
       stream: false, // Ensure we get a response object, not a stream
     };
   }

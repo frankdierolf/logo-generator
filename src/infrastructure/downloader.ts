@@ -3,11 +3,12 @@ import { ensureDir } from "@std/fs";
 import type { LogoMetadata, LogoResult } from "../core/types.ts";
 
 export class ImageDownloader {
-  async download(result: LogoResult, outputDir: string): Promise<string> {
-    await ensureDir(outputDir);
+  async download(result: LogoResult, outputDir: string, iteration?: number): Promise<string> {
+    const finalOutputDir = iteration ? join(outputDir, `iteration-${iteration}`) : outputDir;
+    await ensureDir(finalOutputDir);
 
     const filename = this.generateFilename(result.metadata);
-    const filepath = join(outputDir, filename);
+    const filepath = join(finalOutputDir, filename);
 
     try {
       const response = await fetch(result.url);
@@ -19,7 +20,7 @@ export class ImageDownloader {
       await Deno.writeFile(filepath, new Uint8Array(imageBuffer));
 
       // Save metadata alongside the image
-      await this.saveMetadata(result.metadata, outputDir);
+      await this.saveMetadata(result.metadata, finalOutputDir);
 
       return filepath;
     } catch (error) {
@@ -34,12 +35,13 @@ export class ImageDownloader {
   async downloadBatch(
     results: LogoResult[],
     outputDir: string,
+    iteration?: number,
   ): Promise<string[]> {
     const filepaths: string[] = [];
 
     for (const result of results) {
       try {
-        const filepath = await this.download(result, outputDir);
+        const filepath = await this.download(result, outputDir, iteration);
         filepaths.push(filepath);
       } catch (error) {
         console.error(
@@ -90,5 +92,41 @@ export class ImageDownloader {
     } catch {
       return null;
     }
+  }
+
+  async createIterationManifest(
+    outputDir: string,
+    iteration: number,
+    description: string,
+    results: LogoResult[],
+  ): Promise<void> {
+    const manifestPath = join(outputDir, "iterations.json");
+    
+    let manifest: any = {};
+    try {
+      const content = await Deno.readTextFile(manifestPath);
+      manifest = JSON.parse(content);
+    } catch {
+      manifest = { iterations: [] };
+    }
+
+    const iterationData = {
+      iteration,
+      timestamp: Date.now(),
+      description,
+      count: results.length,
+      totalCost: results.reduce((sum, r) => sum + r.metadata.cost, 0),
+      logos: results.map(r => ({
+        company: r.metadata.company,
+        id: r.metadata.id,
+        style: r.metadata.style,
+        cost: r.metadata.cost,
+      })),
+    };
+
+    manifest.iterations = manifest.iterations || [];
+    manifest.iterations.push(iterationData);
+
+    await Deno.writeTextFile(manifestPath, JSON.stringify(manifest, null, 2));
   }
 }

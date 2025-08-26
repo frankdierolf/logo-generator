@@ -99,3 +99,4 @@ Thumbs.db
 *.key
 .openai_key
 openai_key.txt
+CLAUDE.md

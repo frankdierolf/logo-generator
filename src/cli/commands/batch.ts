@@ -15,9 +15,8 @@ import type {
 
 export const batchCommand = new Command()
   .description("Generate multiple logos from a CSV file or JSON array")
-  .option("-f, --file <path:string>", "Input file (CSV or JSON)", {
-    required: true,
-  })
+  .option("-f, --file <path:string>", "Input file (CSV or JSON)")
+  .option("--help-examples", "Show detailed batch file examples")
   .option("-o, --output <dir:string>", "Output directory")
   .option("--concurrency <num:number>", "Number of concurrent generations", {
     default: 3,
@@ -27,19 +26,35 @@ export const batchCommand = new Command()
     "--dry-run",
     "Show what would be generated without actually generating",
   )
+  .option("--iteration <num:number>", "Iteration number (creates iteration-N folder)")
+  .option("--quiet", "Minimal output for agentic tools")
   .action(async (options) => {
+    if (options.helpExamples) {
+      showBatchExamples();
+      return;
+    }
+
+    if (!options.file) {
+      console.error("❌ Input file is required. Use --file <path> or --help-examples for examples.");
+      Deno.exit(1);
+    }
+
     const configManager = new ConfigManager();
     const config = await configManager.load();
 
     try {
-      console.log(colors.cyan.bold("📦 Batch Logo Generation"));
+      if (!options.quiet) {
+        console.log(colors.cyan.bold("📦 Batch Logo Generation"));
+      }
 
       // Load and parse input file
       const requests = await loadBatchFile(
         options.file,
         options.format || "auto",
       );
-      console.log(colors.gray(`📄 Loaded ${requests.length} logo requests`));
+      if (!options.quiet) {
+        console.log(colors.gray(`📄 Loaded ${requests.length} logo requests`));
+      }
 
       if (options.dryRun) {
         console.log(
@@ -74,6 +89,8 @@ export const batchCommand = new Command()
         requests,
         concurrency: options.concurrency,
         outputDir,
+        iteration: options.iteration,
+        quiet: options.quiet,
       };
 
       const startTime = Date.now();
@@ -81,32 +98,48 @@ export const batchCommand = new Command()
       const duration = Date.now() - startTime;
 
       // Display results
-      console.log(colors.green.bold("\n📊 Batch Generation Complete!"));
-      console.log(`✅ Successful: ${result.successful.length}`);
-      console.log(`❌ Failed: ${result.failed.length}`);
-      console.log(`⏱️ Duration: ${Math.round(duration / 1000)}s`);
-      console.log(`💰 Total cost: $${result.stats.totalCost.toFixed(3)}`);
-      console.log(`📁 Output directory: ${outputDir}`);
+      if (options.quiet) {
+        // JSON output for agentic tools
+        const output = {
+          success: true,
+          total: result.stats.total,
+          successful: result.stats.successful,
+          failed: result.stats.failed,
+          totalCost: result.stats.totalCost,
+          duration: Math.round(duration / 1000),
+          outputDir: options.iteration ? `${outputDir}/iteration-${options.iteration}` : outputDir,
+          iteration: options.iteration,
+          logos: result.successful.map(r => ({
+            company: r.metadata.company,
+            id: r.metadata.id,
+            url: r.url,
+            cost: r.metadata.cost,
+            localPath: r.localPath,
+          })),
+          errors: result.failed.map(f => ({
+            company: f.request.company,
+            error: f.error.message,
+          })),
+        };
+        console.log(JSON.stringify(output, null, 2));
+      } else {
+        console.log(colors.green.bold("\n📊 Batch Generation Complete!"));
+        console.log(`✅ Successful: ${result.successful.length}`);
+        console.log(`❌ Failed: ${result.failed.length}`);
+        console.log(`⏱️ Duration: ${Math.round(duration / 1000)}s`);
+        console.log(`💰 Total cost: $${result.stats.totalCost.toFixed(3)}`);
+        console.log(`📁 Output directory: ${outputDir}`);
 
-      if (result.failed.length > 0) {
-        console.log(colors.red("\n❌ Failed generations:"));
-        result.failed.forEach((failure, i) => {
-          console.log(
-            `  ${i + 1}. ${failure.request.company}: ${failure.error.message}`,
-          );
-        });
+        if (result.failed.length > 0) {
+          console.log(colors.red("\n❌ Failed generations:"));
+          result.failed.forEach((failure, i) => {
+            console.log(
+              `  ${i + 1}. ${failure.request.company}: ${failure.error.message}`,
+            );
+          });
+        }
       }
 
-      // Show cache statistics if available
-      if (result.stats.cacheHits > 0) {
-        const cacheRate = (result.stats.cacheHits / result.stats.total * 100)
-          .toFixed(1);
-        console.log(
-          colors.cyan(
-            `🗄️ Cache hits: ${result.stats.cacheHits} (${cacheRate}%)`,
-          ),
-        );
-      }
     } catch (error) {
       console.error(
         colors.red(
@@ -202,7 +235,6 @@ async function processBatch(
       failed: 0,
       totalCost: 0,
       duration: 0,
-      cacheHits: 0,
     },
   };
 
@@ -232,6 +264,7 @@ async function processBatch(
           logoResult.localPath = await downloader.download(
             logoResult,
             batch.outputDir,
+            batch.iteration,
           );
         }
 
@@ -240,26 +273,114 @@ async function processBatch(
         results.stats.totalCost += logoResult.metadata.cost;
 
         completed++;
-        console.log(
-          colors.green(
-            `✅ ${request.company} complete (${completed}/${batch.requests.length})`,
-          ),
-        );
+        if (!batch.quiet) {
+          console.log(
+            colors.green(
+              `✅ ${request.company} complete (${completed}/${batch.requests.length})`,
+            ),
+          );
+        }
       } catch (error) {
         results.failed.push({ request, error: error as Error });
         results.stats.failed++;
 
         completed++;
-        console.log(
-          colors.red(
-            `❌ ${request.company} failed (${completed}/${batch.requests.length})`,
-          ),
-        );
+        if (!batch.quiet) {
+          console.log(
+            colors.red(
+              `❌ ${request.company} failed (${completed}/${batch.requests.length})`,
+            ),
+          );
+        }
       }
     })
   );
 
   await Promise.all(promises);
 
+  // Create iteration manifest if iteration is specified
+  if (batch.iteration && batch.outputDir && results.successful.length > 0) {
+    await downloader.createIterationManifest(
+      batch.outputDir,
+      batch.iteration,
+      `Batch generation: ${batch.requests.length} logos`,
+      results.successful,
+    );
+  }
+
   return results;
+}
+
+function showBatchExamples(): void {
+  console.log(colors.cyan.bold("📦 Batch File Examples"));
+  
+  console.log(colors.yellow.bold("\n🔧 JSON Format (Recommended for Claude Code):"));
+  console.log(colors.gray("Create a file like `iteration-1-batch.json`:"));
+  
+  const jsonExample = `[
+  {
+    "company": "TechCorp",
+    "prompt": "modern software company logo with geometric shapes",
+    "style": "modern",
+    "colors": ["blue", "gray"],
+    "quality": "standard"
+  },
+  {
+    "company": "TechCorp",
+    "prompt": "minimalist tech logo with clean typography",
+    "style": "minimal",
+    "colors": ["blue", "white"],
+    "quality": "standard"
+  },
+  {
+    "company": "TechCorp", 
+    "prompt": "professional corporate logo with subtle tech elements",
+    "style": "corporate",
+    "colors": ["blue", "black"],
+    "quality": "hd"
+  }
+]`;
+
+  console.log(colors.dim(jsonExample));
+
+  console.log(colors.yellow.bold("\n📊 CSV Format:"));
+  console.log(colors.gray("Create a file like `logos.csv`:"));
+  
+  const csvExample = `company,prompt,style,colors,quality
+TechCorp,modern software logo,modern,"blue;gray",standard
+FoodiePlace,cozy restaurant logo,classic,"red;yellow;brown",standard
+GreenLeaf,eco-friendly logo with leaf,minimal,"green;white",standard`;
+
+  console.log(colors.dim(csvExample));
+
+  console.log(colors.yellow.bold("\n🚀 Usage Examples:"));
+  
+  console.log(colors.cyan("Basic batch generation:"));
+  console.log(colors.gray("deno run --allow-all jsr:@logocli/logo-generator batch --file batch.json"));
+  
+  console.log(colors.cyan("\nWith iterations (for Claude Code workflow):"));
+  console.log(colors.gray("deno run --allow-all jsr:@logocli/logo-generator batch --file iteration-1.json --iteration 1"));
+  
+  console.log(colors.cyan("\nQuiet mode for agentic tools:"));
+  console.log(colors.gray("deno run --allow-all jsr:@logocli/logo-generator batch --file batch.json --quiet"));
+  
+  console.log(colors.cyan("\nCustom output directory:"));
+  console.log(colors.gray("deno run --allow-all jsr:@logocli/logo-generator batch --file batch.json --output ./my-logos"));
+
+  console.log(colors.yellow.bold("\n🎨 Iterative Design Workflow with Claude Code:"));
+  
+  const workflowSteps = `1. Create context: deno run --allow-all jsr:@logocli/logo-generator context --company "YourCorp"
+2. Initial batch: deno run --allow-all jsr:@logocli/logo-generator batch --file iteration-1.json --iteration 1
+3. Review results in ./logos/iteration-1/
+4. Create refined iteration-2.json based on results
+5. Continue iterating until perfect logo is found
+6. Check progress: cat ./logos/iterations.json`;
+
+  console.log(colors.gray(workflowSteps));
+
+  console.log(colors.yellow.bold("\n💡 Pro Tips:"));
+  console.log(colors.gray("• Use JSON format for better control and Claude Code compatibility"));
+  console.log(colors.gray("• Use iterations to organize design exploration"));
+  console.log(colors.gray("• Use --quiet for clean output when working with AI assistants"));
+  console.log(colors.gray("• Check iterations.json to track your design journey"));
 }

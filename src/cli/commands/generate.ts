@@ -102,6 +102,8 @@ export const generateCommand = new Command()
   .option("--colors <colors:string>", "Comma-separated color preferences")
   .option("--preview", "Generate preview quality first (lower cost)")
   .option("--industry <industry>", "Target industry for smart defaults")
+  .option("--iteration <num:number>", "Iteration number (creates iteration-N folder)")
+  .option("--quiet", "Minimal output for agentic tools")
   .action(async (options) => {
     const configManager = new ConfigManager();
     const config = await configManager.load();
@@ -110,10 +112,12 @@ export const generateCommand = new Command()
       const generator = new LogoGenerator(configManager.getApiKey());
       const downloader = new ImageDownloader();
 
-      console.log(colors.cyan("🎨 Generating logo..."));
-      console.log(colors.gray(`Company: ${options.company}`));
-      console.log(colors.gray(`Prompt: ${options.prompt}`));
-      console.log(colors.gray(`Style: ${options.style}`));
+      if (!options.quiet) {
+        console.log(colors.cyan("🎨 Generating logo..."));
+        console.log(colors.gray(`Company: ${options.company}`));
+        console.log(colors.gray(`Prompt: ${options.prompt}`));
+        console.log(colors.gray(`Style: ${options.style}`));
+      }
 
       // Type casting with validation
       const style = options.style && isValidLogoStyle(options.style)
@@ -135,15 +139,17 @@ export const generateCommand = new Command()
       // GPT-image-1 cost calculation
       const costPerImage = quality === "hd" ? 0.19 : 0.07;
 
-      console.log(colors.gray(`Model: ${model}`));
-      console.log(
-        colors.gray(
-          `Quality: ${quality} ($${costPerImage.toFixed(3)} per image)`,
-        ),
-      );
+      if (!options.quiet) {
+        console.log(colors.gray(`Model: ${model}`));
+        console.log(
+          colors.gray(
+            `Quality: ${quality} ($${costPerImage.toFixed(3)} per image)`,
+          ),
+        );
 
-      if (options.template) {
-        console.log(colors.gray(`Template: ${options.template}`));
+        if (options.template) {
+          console.log(colors.gray(`Template: ${options.template}`));
+        }
       }
 
       const request: LogoRequest = {
@@ -165,13 +171,17 @@ export const generateCommand = new Command()
         model,
         template: options.template,
         colors: request.colors,
+        iteration: options.iteration,
+        quiet: options.quiet,
       };
 
       let results;
       if (options.variations > 1) {
-        console.log(
-          colors.yellow(`Generating ${options.variations} variations...`),
-        );
+        if (!options.quiet) {
+          console.log(
+            colors.yellow(`Generating ${options.variations} variations...`),
+          );
+        }
         results = await generator.generateVariations(
           request,
           options.variations,
@@ -181,39 +191,81 @@ export const generateCommand = new Command()
         results = [await generator.generate(request, generationOptions)];
       }
 
-      console.log(
-        colors.green(`✅ Successfully generated ${results.length} logo(s)`),
-      );
+      if (!options.quiet) {
+        console.log(
+          colors.green(`✅ Successfully generated ${results.length} logo(s)`),
+        );
+      }
 
       // Display results
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i];
-        console.log(`\n${colors.bold(`Logo ${i + 1}:`)}`);
-        console.log(`  URL: ${result.url}`);
-        console.log(`  ID: ${result.metadata.id}`);
-        console.log(`  Cost: $${result.metadata.cost.toFixed(3)}`);
+      if (options.quiet) {
+        // JSON output for agentic tools
+        const output = {
+          success: true,
+          count: results.length,
+          totalCost: results.reduce((sum, r) => sum + r.metadata.cost, 0),
+          logos: results.map((result, i) => ({
+            index: i + 1,
+            url: result.url,
+            id: result.metadata.id,
+            cost: result.metadata.cost,
+            revisedPrompt: result.revisedPrompt,
+          })),
+        };
+        console.log(JSON.stringify(output, null, 2));
+      } else {
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          console.log(`\n${colors.bold(`Logo ${i + 1}:`)}`);
+          console.log(`  URL: ${result.url}`);
+          console.log(`  ID: ${result.metadata.id}`);
+          console.log(`  Cost: $${result.metadata.cost.toFixed(3)}`);
 
-        if (result.revisedPrompt) {
-          console.log(`  Revised: ${colors.dim(result.revisedPrompt)}`);
+          if (result.revisedPrompt) {
+            console.log(`  Revised: ${colors.dim(result.revisedPrompt)}`);
+          }
         }
       }
 
       // Download images if requested (check for --no-download flag)
       if (options.download !== false) {
         const outputDir = options.output || config.outputDir || "./logos";
-        console.log(colors.yellow(`\n📥 Downloading to ${outputDir}...`));
+        if (!options.quiet) {
+          const finalDir = options.iteration 
+            ? `${outputDir}/iteration-${options.iteration}`
+            : outputDir;
+          console.log(colors.yellow(`\n📥 Downloading to ${finalDir}...`));
+        }
 
-        const filepaths = await downloader.downloadBatch(results, outputDir);
+        const filepaths = await downloader.downloadBatch(
+          results,
+          outputDir,
+          options.iteration,
+        );
 
-        console.log(colors.green("✅ Download complete!"));
-        filepaths.forEach((path, i) => {
-          console.log(`  ${i + 1}. ${path}`);
-        });
+        // Create iteration manifest if iteration is specified
+        if (options.iteration) {
+          await downloader.createIterationManifest(
+            outputDir,
+            options.iteration,
+            `${options.company}: ${options.prompt}`,
+            results,
+          );
+        }
+
+        if (!options.quiet) {
+          console.log(colors.green("✅ Download complete!"));
+          filepaths.forEach((path, i) => {
+            console.log(`  ${i + 1}. ${path}`);
+          });
+        }
       }
 
       // Show total cost
-      const totalCost = results.reduce((sum, r) => sum + r.metadata.cost, 0);
-      console.log(`\n💰 Total cost: $${totalCost.toFixed(3)}`);
+      if (!options.quiet) {
+        const totalCost = results.reduce((sum, r) => sum + r.metadata.cost, 0);
+        console.log(`\n💰 Total cost: $${totalCost.toFixed(3)}`);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error
         ? error.message

@@ -28,10 +28,6 @@ export interface LogoMetadata {
   cost: number;
 }
 
-export interface CachedLogo extends LogoResult {
-  expiresAt: number;
-  hit: boolean;
-}
 
 export interface GenerationOptions {
   style?: LogoStyle;
@@ -40,17 +36,20 @@ export interface GenerationOptions {
   size?: ImageSize;
   quality?: ImageQuality;
   variations?: number;
-  useCache?: boolean;
   model?: AIModel;
   template?: string;
   negativePrompts?: string[];
   customElements?: string[];
+  iteration?: number;
+  quiet?: boolean;
 }
 
 export interface BatchRequest {
   requests: LogoRequest[];
   concurrency?: number;
   outputDir?: string;
+  iteration?: number;
+  quiet?: boolean;
 }
 
 export interface BatchResult {
@@ -70,7 +69,6 @@ export interface BatchStats {
   failed: number;
   totalCost: number;
   duration: number;
-  cacheHits: number;
 }
 
 export interface Template {
@@ -184,9 +182,6 @@ export interface ConfigOptions {
   defaultSize?: ImageSize;
   defaultModel?: AIModel;
   outputDir?: string;
-  cacheEnabled?: boolean;
-  cacheTtl?: number;
-  maxCacheSize?: string;
 }
 
 export interface ProfessionalTemplate {
