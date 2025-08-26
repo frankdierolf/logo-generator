@@ -23,6 +23,18 @@ Logo 1:
 
 ## Try it (2 minutes)
 
+**Run directly from JSR (no installation needed):**
+
+```bash
+# Set your OpenAI API key
+export OPENAI_API_KEY="sk-your-key-here"
+
+# Run directly from JSR
+deno run --allow-all jsr:@logocli/logo-generator wizard
+```
+
+**Or clone and run locally:**
+
 ```bash
 # 1. Get the code
 git clone <this-repo> && cd logocreation
