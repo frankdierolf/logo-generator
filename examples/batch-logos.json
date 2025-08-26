@@ -1,0 +1,30 @@
+[
+  {
+    "company": "TechCorp",
+    "prompt": "modern software company logo with geometric shapes",
+    "style": "modern",
+    "colors": ["blue", "white"],
+    "quality": "standard"
+  },
+  {
+    "company": "FoodiePlace",
+    "prompt": "cozy restaurant logo with chef hat and utensils",
+    "style": "classic",
+    "colors": ["red", "yellow", "brown"],
+    "quality": "standard"
+  },
+  {
+    "company": "GreenLeaf",
+    "prompt": "eco-friendly company logo with leaf symbol",
+    "style": "minimal",
+    "colors": ["green", "white"],
+    "quality": "standard"
+  },
+  {
+    "company": "FitLife",
+    "prompt": "fitness gym logo with strong typography",
+    "style": "bold",
+    "colors": ["black", "orange"],
+    "quality": "hd"
+  }
+]
