@@ -1,8 +1,12 @@
-# Logo CLI for Claude Code
-
-> Ultra-simple professional logo generation with AI assistance
-
-🎯 **Two commands. That's it.** Create amazing logos through Claude Code in minutes.
+<div align="center">
+  <img src=".github/assets/logo-cli-logo.png" alt="Logo CLI Logo" width="200" height="200">
+  
+  # Logo CLI for Claude Code
+  
+  > Ultra-simple professional logo generation with AI assistance
+  
+  🎯 **Two commands. That's it.** Create amazing logos through Claude Code in minutes.
+</div>
 
 ## Quick Start
 
@@ -17,6 +21,14 @@ export OPENAI_API_KEY="sk-your-key-here"
 ```
 
 **That's it!** Claude now knows everything and will guide you through creating the perfect logo.
+
+## Demo
+
+See Logo CLI in action - from company questions to final logos in under a minute:
+
+https://github.com/user-attachments/assets/demo-workflow.mp4
+
+> This 1-minute demo shows the complete workflow: Claude asking about your company, generating diverse logo options, and organizing results in iteration folders.
 
 ---
 

@@ -3,6 +3,12 @@ logos/
 generated-logos/
 cache/
 bin/
+test-logos/
+
+# Video and media working files
+*.mkv
+*output_*.mp4
+*speed_*.mp4
 
 # Configuration
 config.json
